@@ -1,1 +1,0 @@
-ASP.NET Core 10.0 (Blazor Interactive Server), Entity Framework Core 10.0 with SQLite, Tailwind CSS 3.4 via npm/MSBuild integration.

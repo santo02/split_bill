@@ -1,5 +1,0 @@
-- Entry point: `Program.cs` configures a .NET 10.0 WebApplication with SQLite (via `AppDbContext`) and registers `SettlementService` as scoped.
-- UI Layer: Blazor Interactive Server components in `Components/` (Pages, Layouts) using `Routes.razor` for navigation and `App.razor` as the root HTML shell.
-- Data Layer: Entity Framework Core with SQLite (`splitbill.db`), featuring soft-delete query filters and cascade delete relationships defined in `Data/AppDbContext.cs`.
-- Service Layer: `Services/SettlementService.cs` implements core business logic for back-calculating inclusive taxes/services and minimizing cash flow for settlements.
-- Asset Pipeline: Tailwind CSS is compiled from `Styles/app.css` to `wwwroot/app.css` via an MSBuild pre-build target executing `npm run build:css`.
