@@ -1,0 +1,325 @@
+@page "/"
+@using SplitBill.Data
+@using SplitBill.Data.Entities
+@inject AppDbContext Db
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>SplitBill — Bagi Tagihan Tanpa Ribet</PageTitle>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 group">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+            </div>
+            <span class="text-xl font-extrabold text-slate-800 tracking-tight">Split<span class="text-blue-600">Bill</span></span>
+        </a>
+        <!-- Right side: CTA -->
+        <button @onclick="OpenModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md shadow-blue-500/15 hover:shadow-blue-500/30 transition-all duration-200 active:scale-95">
+            Mulai Sekarang
+        </button>
+    </div>
+</nav>
+
+<!-- ===== HERO SECTION (white background) ===== -->
+<section class="bg-white border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-6 py-16 md:py-24">
+        <div class="flex flex-col md:flex-row items-center gap-12">
+            <!-- Left text -->
+            <div class="flex-1 text-center md:text-left">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold mb-5 animate-fade-in-up">
+                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
+                    Gratis & Mudah Digunakan
+                </div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight animate-fade-in-up">
+                    Bagi Tagihan,<br/><span class="text-blue-600">Tanpa Ribet.</span>
+                </h1>
+                <p class="mt-4 text-base md:text-lg text-slate-500 leading-relaxed" style="animation: fadeInUp 0.4s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;">
+                    Cara termudah melacak pengeluaran bersama teman dan keluarga.<br class="hidden md:block" />
+                    Tidak ada lagi percakapan canggung, hanya perhitungan yang adil.
+                </p>
+                <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center md:justify-start" style="animation: fadeInUp 0.4s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;">
+                    <button @onclick="OpenModal" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 transition-all duration-200 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Mulai Sekarang
+                    </button>
+                    <a href="#features" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-sm font-bold rounded-xl transition-all duration-200 active:scale-95">
+                        Pelajari Fitur
+                    </a>
+                </div>
+
+                <!-- Trust badges inline -->
+                <div class="mt-8 flex flex-wrap gap-5 justify-center md:justify-start text-xs text-slate-400" style="animation: fadeInUp 0.4s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;">
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                        </svg>
+                        <span class="font-semibold">Data Aman</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                        </svg>
+                        <span class="font-semibold">Akses Bersama</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                        </svg>
+                        <span class="font-semibold">Sinkron Real-time</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Animated Illustration -->
+            <div class="flex-1 w-full max-w-sm md:max-w-none" style="animation: fadeInUp 0.5s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;">
+                <div class="relative">
+                    <!-- Glow background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-50 rounded-3xl -rotate-2 scale-105 opacity-60"></div>
+                    <!-- Main image -->
+                    <img src="/hero-splitbill.png" alt="SplitBill app illustration" class="relative w-full rounded-2xl shadow-xl shadow-blue-200/40 border border-gray-100 hover:scale-[1.02] transition-transform duration-500" />
+
+                    <!-- Floating cards -->
+                    <div class="absolute -top-4 -left-4 bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2 animate-float-slow">
+                        <span class="text-lg">🍕</span>
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Makanan</p>
+                            <p class="text-xs font-black text-slate-800">Rp 250.000</p>
+                        </div>
+                    </div>
+
+                    <div class="absolute -bottom-4 -right-4 bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2 animate-float-medium">
+                        <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Split Selesai!</p>
+                            <p class="text-xs font-black text-emerald-600">Semua Lunas ✓</p>
+                        </div>
+                    </div>
+
+                    <div class="absolute top-1/2 -right-6 transform -translate-y-1/2 bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2 animate-float-fast">
+                        <span class="text-base">✈️</span>
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Travel</p>
+                            <p class="text-xs font-black text-slate-800">Rp 1,2 Jt</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FEATURES SECTION ===== -->
+<section id="features" class="py-16 bg-gray-50/50 border-b border-gray-100">
+    <div class="max-w-5xl mx-auto px-6">
+        <div class="text-center mb-10">
+            <h2 class="text-2xl font-extrabold text-slate-800">Kenapa Pilih SplitBill?</h2>
+            <p class="text-sm text-slate-400 mt-2">Semua yang Anda butuhkan untuk membagi tagihan dengan adil</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.684 4.5 4.815V9a6.75 6.75 0 0 0 13.5 0V4.815c0-1.131-.807-2.115-1.907-2.243A48.714 48.714 0 0 0 12 2.25Z" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 mb-1">Catat Pengeluaran</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">Tambahkan setiap pengeluaran dengan detail kategori, pembayar, dan peserta yang ikut menanggung.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 mb-1">Split Otomatis</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">Sistem menghitung pembagian optimal yang meminimalkan jumlah transfer antar anggota kelompok.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center mb-4">
+                    <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 mb-1">Bagikan Link</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">Bagikan satu link ke semua teman. Mereka bisa langsung melihat tagihan dan pembagian biaya secara real-time.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="bg-white border-t border-gray-100">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 text-slate-400">
+        <span class="font-semibold text-sm"><span class="text-slate-600 font-bold">SplitBill Inc.</span> © @DateTime.Now.Year Hak cipta dilindungi.</span>
+        <div class="flex items-center gap-6 font-medium text-sm">
+            <span class="hover:text-slate-600 cursor-pointer transition-colors">Kebijakan Privasi</span>
+            <span class="hover:text-slate-600 cursor-pointer transition-colors">Syarat &amp; Ketentuan</span>
+            <span class="hover:text-slate-600 cursor-pointer transition-colors">Kontak</span>
+        </div>
+    </div>
+</footer>
+
+<!-- ===== MODAL: CATAT PENGELUARAN BARU ===== -->
+@if (showModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" @onclick="HandleBackdropClick">
+        <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-slide-up" @onclick:stopPropagation>
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <div>
+                    <h2 class="text-base font-extrabold text-slate-800 tracking-tight">Catat Pengeluaran Baru</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Tentukan perjalanan atau acara Anda untuk mulai membagi biaya.</p>
+                </div>
+                <button @onclick="CloseModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-5">
+                <EditForm Model="@newBill" OnValidSubmit="CreateBill" FormName="createBillForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-red-500 text-xs mb-4 font-semibold" />
+
+                    <div class="space-y-5">
+                        <!-- Event Name -->
+                        <div class="space-y-1.5">
+                            <label for="eventName" class="block text-xs font-bold uppercase tracking-wider text-slate-500">Nama Acara / Perjalanan</label>
+                            <input id="eventName" @bind="newBill.EventName" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm" placeholder="Contoh: Weekend in Paris" required />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="space-y-1.5">
+                            <label for="description" class="block text-xs font-bold uppercase tracking-wider text-slate-500">Deskripsi</label>
+                            <textarea id="description" @bind="newBill.Description" rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm resize-none" placeholder="Untuk apa sesi ini?"></textarea>
+                        </div>
+
+                        <!-- Dates Grid -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label for="startDate" class="block text-xs font-bold uppercase tracking-wider text-slate-500">Tanggal Mulai</label>
+                                <input id="startDate" type="date" @bind="newBill.StartDate" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                            </div>
+                            <div class="space-y-1.5">
+                                <label for="endDate" class="block text-xs font-bold uppercase tracking-wider text-slate-500">Tanggal Selesai</label>
+                                <input id="endDate" type="date" @bind="newBill.EndDate" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="w-full mt-6 py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-500/15 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>Buat Sesi &amp; Mulai</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private BillModel newBill = new();
+    private bool showModal = false;
+
+    private void OpenModal()
+    {
+        newBill = new BillModel();
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void HandleBackdropClick()
+    {
+        CloseModal();
+    }
+
+    private async Task CreateBill()
+    {
+        string uuid = Guid.NewGuid().ToString("N").Substring(0, 8);
+        string creatorToken = Guid.NewGuid().ToString("D");
+
+        var bill = new Bill
+        {
+            Uuid = uuid,
+            EventName = newBill.EventName,
+            Description = string.IsNullOrWhiteSpace(newBill.Description) ? "Perjalanan bersama tim." : newBill.Description,
+            StartDate = newBill.StartDate,
+            EndDate = newBill.EndDate,
+            CreatedAt = DateTime.UtcNow,
+            TaxType = ChargeType.Percentage,
+            TaxValue = 0,
+            ServiceChargeType = ChargeType.Percentage,
+            ServiceChargeValue = 0,
+            CreatorToken = creatorToken,
+            IsDeleted = false
+        };
+
+        Db.Bills.Add(bill);
+        await Db.SaveChangesAsync();
+
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", $"bill_creator_token_{uuid}", creatorToken);
+        }
+        catch { }
+
+        Navigation.NavigateTo($"/bill/{uuid}");
+    }
+
+    public class BillModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Nama acara wajib diisi")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "Nama terlalu panjang")]
+        public string EventName { get; set; } = "";
+
+        public string Description { get; set; } = "";
+
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime EndDate { get; set; } = DateTime.Today.AddDays(3);
+    }
+}
+
+<style>
+    @@keyframes float-slow {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+    }
+    @@keyframes float-medium {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+    @@keyframes float-fast {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    .animate-float-slow {
+        animation: float-slow 4s ease-in-out infinite;
+    }
+    .animate-float-medium {
+        animation: float-medium 3s ease-in-out infinite 0.5s;
+    }
+    .animate-float-fast {
+        animation: float-fast 2.5s ease-in-out infinite 1s;
+    }
+</style>

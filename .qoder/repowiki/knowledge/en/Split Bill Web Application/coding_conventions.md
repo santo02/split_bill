@@ -1,0 +1,2 @@
+- Entities implement soft-delete patterns using an `IsDeleted` boolean property, enforced globally via EF Core `HasQueryFilter` in the DbContext.
+- Financial calculations in `SettlementService` treat `Item.Price` as the definitive total (tax-inclusive), back-calculating tax and service portions for informational breakdowns only.

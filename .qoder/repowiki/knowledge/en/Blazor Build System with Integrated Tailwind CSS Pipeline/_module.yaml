@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: build_system
+title: Blazor Build System with Integrated Tailwind CSS Pipeline
+scope: []
+source_files:
+    - split_bill.csproj
+    - package.json
+    - SplitBill.sln
+    - Properties/launchSettings.json
+    - split_bill.Tests/split_bill.Tests.csproj
+depends_on: []
+related_to: []

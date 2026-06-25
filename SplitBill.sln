@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="split_bill.csproj" />
+  <Project Path="split_bill.Tests/split_bill.Tests.csproj" />
+</Solution>

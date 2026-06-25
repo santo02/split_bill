@@ -1,0 +1,1 @@
+A Blazor Interactive Server application for managing shared expenses, calculating tax-inclusive settlements, and generating participant transfer instructions.

@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: configuration_system
+title: ASP.NET Core Configuration System
+scope: []
+source_files:
+    - appsettings.json
+    - appsettings.Development.json
+    - Properties/launchSettings.json
+    - Program.cs
+    - split_bill.csproj
+depends_on: []
+related_to: []

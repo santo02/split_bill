@@ -1,0 +1,25 @@
+# Build outputs
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+appsettings.Development.json
+
+# OS
+Thumbs.db
+.DS_Store

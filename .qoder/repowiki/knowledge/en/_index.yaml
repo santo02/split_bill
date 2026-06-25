@@ -1,0 +1,156 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: Q0DeR-MaG1C-BrAnCh-Fo2-NoN-GiT-Or-No-C0MmIt
+nodes_managed: true
+exported_at: "2026-06-25T08:37:54Z"
+modules:
+    "":
+        dir_name: Split Bill Web Application
+        title: Split Bill Web Application
+        scope:
+            - Program.cs
+            - SplitBill.sln
+            - split_bill.csproj
+            - appsettings.json
+            - appsettings.Development.json
+            - package.json
+            - package-lock.json
+            - tailwind.config.js
+            - plan.md
+            - Properties/
+            - Styles/
+            - wwwroot/
+            - .vs\VSWorkspaceState.json
+            - .vs\slnx.sqlite
+            - .vs\split_bill.slnx\FileContentIndex\45c0d115-c23c-4dfb-88f1-9211791214a4.vsidx
+            - .vs\split_bill.slnx\FileContentIndex\5a939660-8acb-4e56-9c9d-1b0ab48f90b4.vsidx
+            - .vs\split_bill.slnx\FileContentIndex\5e37b348-3a8e-4712-8ec3-aede91ea68c1.vsidx
+            - .vs\split_bill.slnx\FileContentIndex\8ad255ed-17f8-4f9e-b5c9-43d6d3a194f4.vsidx
+            - .vs\split_bill.slnx\FileContentIndex\ecf42db4-550c-48ce-91e2-a78d01915d1f.vsidx
+            - .vs\split_bill.slnx\v18\.wsuo
+            - .vs\split_bill.slnx\v18\DocumentLayout.backup.json
+            - .vs\split_bill.slnx\v18\DocumentLayout.json
+            - Components\App.razor
+            - Components\Layout\MainLayout.razor
+            - Components\Layout\MainLayout.razor.css
+            - Components\Layout\NavMenu.razor
+            - Components\Layout\NavMenu.razor.css
+            - Components\Layout\ReconnectModal.razor
+            - Components\Layout\ReconnectModal.razor.css
+            - Components\Layout\ReconnectModal.razor.js
+            - Components\Pages\BillDetails.razor
+            - Components\Pages\Counter.razor
+            - Components\Pages\Error.razor
+            - Components\Pages\Home.razor
+            - Components\Pages\NotFound.razor
+            - Components\Pages\Weather.razor
+            - Components\Routes.razor
+            - Components\_Imports.razor
+            - Data\AppDbContext.cs
+            - Data\Entities\Bill.cs
+            - Data\Entities\Item.cs
+            - Data\Entities\ItemAssignee.cs
+            - Data\Entities\Participant.cs
+            - Data\Entities\Payer.cs
+            - Migrations\20260602123128_FixPayerBillNav.Designer.cs
+            - Migrations\20260602123128_FixPayerBillNav.cs
+            - Migrations\20260603040137_UpdateTaxServiceNominal.Designer.cs
+            - Migrations\20260603040137_UpdateTaxServiceNominal.cs
+            - Migrations\AppDbContextModelSnapshot.cs
+            - Properties\launchSettings.json
+            - Services\SettlementService.cs
+            - Styles\app.css
+            - split_bill.Tests\SettlementServiceTests.cs
+            - split_bill.Tests\UnitTest1.cs
+            - split_bill.Tests\split_bill.Tests.csproj
+            - splitbill.db
+            - wwwroot\app.css
+            - wwwroot\favicon.png
+            - wwwroot\hero-splitbill.png
+            - wwwroot\hero-workspace.png
+            - wwwroot\js\theme.js
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    build_system:
+        dir_name: Blazor Build System with Integrated Tailwind CSS Pipeline
+        title: Blazor Build System with Integrated Tailwind CSS Pipeline
+        scope: []
+        source_files:
+            - split_bill.csproj
+            - package.json
+            - SplitBill.sln
+            - Properties/launchSettings.json
+            - split_bill.Tests/split_bill.Tests.csproj
+        children: []
+        depends_on: []
+        related_to: []
+    configuration_system:
+        dir_name: ASP.NET Core Configuration System
+        title: ASP.NET Core Configuration System
+        scope: []
+        source_files:
+            - appsettings.json
+            - appsettings.Development.json
+            - Properties/launchSettings.json
+            - Program.cs
+            - split_bill.csproj
+        children: []
+        depends_on: []
+        related_to: []
+    dependency_management:
+        dir_name: Dual Ecosystem Dependency Management (.NET + npm)
+        title: Dual Ecosystem Dependency Management (.NET + npm)
+        scope: []
+        source_files:
+            - split_bill.csproj
+            - split_bill.Tests/split_bill.Tests.csproj
+            - package.json
+            - package-lock.json
+            - SplitBill.sln
+        children: []
+        depends_on: []
+        related_to: []
+    error_handling:
+        dir_name: Blazor Interactive Server Error Handling Strategy
+        title: Blazor Interactive Server Error Handling Strategy
+        scope: []
+        source_files:
+            - Program.cs
+            - Components/Pages/Error.razor
+            - Components/Pages/NotFound.razor
+            - Components/Layout/ReconnectModal.razor
+            - Components/Layout/ReconnectModal.razor.js
+            - Components/Pages/BillDetails.razor
+            - Services/SettlementService.cs
+        children: []
+        depends_on: []
+        related_to: []
+    frontend_style:
+        dir_name: Tailwind CSS Utility-First Styling with Custom Design Tokens
+        title: Tailwind CSS Utility-First Styling with Custom Design Tokens
+        scope: []
+        source_files:
+            - tailwind.config.js
+            - Styles/app.css
+            - wwwroot/app.css
+            - wwwroot/js/theme.js
+            - package.json
+            - Components/Layout/MainLayout.razor.css
+            - Components/Layout/NavMenu.razor.css
+        children: []
+        depends_on: []
+        related_to: []
+    logging_system:
+        dir_name: Default ASP.NET Core Logging Configuration
+        title: Default ASP.NET Core Logging Configuration
+        scope: []
+        source_files:
+            - Program.cs
+            - appsettings.json
+            - appsettings.Development.json
+        children: []
+        depends_on: []
+        related_to: []

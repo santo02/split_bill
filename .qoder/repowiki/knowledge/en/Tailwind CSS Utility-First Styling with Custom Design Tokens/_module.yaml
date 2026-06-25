@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: frontend_style
+title: Tailwind CSS Utility-First Styling with Custom Design Tokens
+scope: []
+source_files:
+    - tailwind.config.js
+    - Styles/app.css
+    - wwwroot/app.css
+    - wwwroot/js/theme.js
+    - package.json
+    - Components/Layout/MainLayout.razor.css
+    - Components/Layout/NavMenu.razor.css
+depends_on: []
+related_to: []

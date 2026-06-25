@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: error_handling
+title: Blazor Interactive Server Error Handling Strategy
+scope: []
+source_files:
+    - Program.cs
+    - Components/Pages/Error.razor
+    - Components/Pages/NotFound.razor
+    - Components/Layout/ReconnectModal.razor
+    - Components/Layout/ReconnectModal.razor.js
+    - Components/Pages/BillDetails.razor
+    - Services/SettlementService.cs
+depends_on: []
+related_to: []

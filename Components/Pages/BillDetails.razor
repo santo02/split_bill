@@ -1,0 +1,1766 @@
+@page "/bill/{Uuid}"
+@using Microsoft.EntityFrameworkCore
+@using SplitBill.Data
+@using SplitBill.Data.Entities
+@using SplitBill.Services
+@inject AppDbContext Db
+@inject SettlementService Settlement
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Rincian Tagihan - @(bill?.EventName ?? "SplitFlow")</PageTitle>
+
+@if (loading)
+{
+    <div class="flex-grow flex items-center justify-center min-h-[400px]">
+        <div class="flex flex-col items-center gap-3">
+            <div class="h-9 w-9 border-[3.5px] border-blue-600/10 border-t-blue-600 rounded-full animate-spin"></div>
+            <p class="text-[11px] text-slate-400 font-bold tracking-wider uppercase">Memuat tagihan...</p>
+        </div>
+    </div>
+}
+else if (bill == null)
+{
+    <div class="flex-grow flex items-center justify-center px-6 text-center min-h-[450px]">
+        <div class="max-w-xs">
+            <div class="inline-flex p-4 rounded-full bg-rose-500/10 text-rose-500 mb-4 animate-pulse">
+                <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800">Tagihan Tidak Ditemukan</h2>
+            <p class="mt-2 text-xs text-slate-400 leading-relaxed">
+                Sesi tagihan dengan link ini tidak tersedia atau telah dihapus.
+            </p>
+            <a href="/" class="mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/10 transition-all active:scale-95">
+                Buat Sesi Baru
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- ===== WEB TOP NAVBAR ===== -->
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+            <!-- Left: Logo & Links -->
+            <div class="flex items-center gap-8">
+                <a href="/" class="flex items-center gap-1.5 group flex-shrink-0">
+                    <span class="text-xl font-extrabold text-blue-600 tracking-tight">SplitFlow</span>
+                </a>
+                <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
+                    <a href="#" class="hover:text-slate-800 transition-colors">Fitur</a>
+                    <a href="#" class="hover:text-slate-800 transition-colors">Cara Kerja</a>
+                    <a href="#" class="hover:text-slate-800 transition-colors">Harga</a>
+                </div>
+            </div>
+
+            <!-- Right: Icons & Profile -->
+            <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <button class="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-700 transition-colors relative">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                    </svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                </button>
+
+                <!-- User Initials Avatar -->
+                <div class="w-9 h-9 rounded-full bg-blue-100 border border-blue-200 text-blue-700 font-extrabold text-sm flex items-center justify-center cursor-pointer hover:bg-blue-200 transition-colors" title="Akun Anda">
+                    JD
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT CONTAINER ===== -->
+    <div class="max-w-6xl mx-auto px-6 pt-10 pb-8 space-y-6">
+        
+        <!-- A. SUB-HEADER / TRIP DETAILS HEADER -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                    @if (bill.Status == "ONGOING")
+                    {
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-[#22c55e]/15 text-[#16a34a] tracking-wider">
+                            ONGOING
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 tracking-wider">
+                            @bill.Status
+                        </span>
+                    }
+                    @* <span class="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                        </svg>
+                        Bali, Indonesia
+                    </span> *@
+                </div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                    @bill.EventName
+                    @if (isCreator)
+                    {
+                        <button @onclick="OpenEditGroupModal" class="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Edit Detail Acara">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.83 20.84a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                            </svg>
+                        </button>
+                    }
+                </h1>
+                <p class="text-xs text-slate-400 font-semibold mt-1">
+                    @(bill.StartDate?.ToString("dd MMM") ?? "12 Jun") - @(bill.EndDate?.ToString("dd MMM yyyy") ?? "20 Jun 2026") • @(bill.Participants.Count(p => !p.IsDeleted)) Anggota
+                </p>
+            </div>
+
+            <!-- Header buttons -->
+            <div class="flex items-center gap-3">
+                <button @onclick="CopyShareLink" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+                    @if (copied)
+                    {
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Tersalin!</span>
+                    }
+                    else
+                    {
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                        </svg>
+                        <span>Bagikan</span>
+                    }
+                </button>
+
+                @if (isCreator)
+                {
+                    <button @onclick="OpenAddMemberModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                        </svg>
+                        <span>Undang Teman</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- B. TOTAL PENGELUARAN CONTAINER CARD -->
+        <div class="glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-6 rounded-2xl">
+
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">TOTAL PENGELUARAN</span>
+                <div class="text-2xl font-black text-slate-800 font-mono">
+                    Rp @settlement.GrandTotal.ToString("N0")
+                </div>
+                @{
+                    var expenseCount = bill.Items.Count(i => !i.IsDeleted);
+                }
+                <span class="text-xs text-slate-400 block">
+                    @(expenseCount == 0 ? "Belum ada transaksi tercatat" : $"{expenseCount} transaksi tercatat")
+                </span>
+            </div>
+
+            <!-- <div class="flex items-center gap-4 self-start sm:self-center">
+                @if (isCreator)
+                {
+                    <button @onclick="OpenAddExpenseModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-500/10 transition-all active:scale-95 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        <span>Tambah Pengeluaran</span>
+                    </button>
+                    <button @onclick="OpenAddPaymentModal" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-emerald-500/10 transition-all active:scale-95">
+                        Settle Up
+                    </button>
+                }
+            </div> -->
+        </div>
+
+        <!-- C. 2-COLUMN MAIN LAYOUT -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Side: Tabs & Contents (2/3 width) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Tab Headers -->
+                <div class="flex items-center border-b border-slate-200 text-sm font-semibold select-none">
+                    <button @onclick='() => { activeTab = "Expenses"; searchQuery = ""; }' class="py-3 px-5 border-b-2 transition-all duration-200 @(activeTab == "Expenses" ? "text-blue-600 border-blue-600 font-bold" : "text-slate-400 border-transparent hover:text-slate-600")">
+                        Pengeluaran
+                    </button>
+                    <button @onclick='() => { activeTab = "Members"; searchQuery = ""; }' class="py-3 px-5 border-b-2 transition-all duration-200 @(activeTab == "Members" ? "text-blue-600 border-blue-600 font-bold" : "text-slate-400 border-transparent hover:text-slate-600")">
+                        Anggota
+                    </button>
+                    <button @onclick='() => { activeTab = "Summary"; searchQuery = ""; }' class="py-3 px-5 border-b-2 transition-all duration-200 @(activeTab == "Summary" ? "text-blue-600 border-blue-600 font-bold" : "text-slate-400 border-transparent hover:text-slate-600")">
+                        Ringkasan
+                    </button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="space-y-4">
+                    
+                    <!-- TAB 1: EXPENSES -->
+                    @if (activeTab == "Expenses")
+                    {
+                        <!-- Search & Category Filter bar -->
+                        <div class="flex flex-col gap-3">
+                            <!-- Search bar -->
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 1 5.196 5.196a7.5 7.5 0 0 1 10.637 10.637Z" />
+                                    </svg>
+                                </span>
+                                <input @bind="searchQuery" @bind:event="oninput" class="w-full pl-9 pr-4 py-2.5 border border-slate-200 bg-white rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all text-xs font-semibold" placeholder="Cari aktivitas..." />
+                            </div>
+
+                            <!-- Category filter tabs -->
+                            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+                                @foreach (var cat in new[] { ("All", "Semua"), ("Food", "Makanan"), ("Lodging", "Penginapan"), ("Travel", "Transportasi"), ("Shopping", "Belanja"), ("Other", "Lainnya") })
+                                {
+                                    var isSelected = selectedCategoryFilter == cat.Item1;
+                                    <button @onclick="() => selectedCategoryFilter = cat.Item1" class="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 @(isSelected ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20" : "bg-slate-100 text-slate-500 hover:bg-slate-200")">
+                                        @cat.Item2
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Expenses List / Empty State -->
+                        @if (!GetFilteredItems().Any())
+                        {
+                            <!-- Empty State Card exactly matching the attachment -->
+                            <div class="bg-white border border-slate-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center space-y-4">
+                                <div class="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                    </svg>
+                                </div>
+                                <div class="space-y-1">
+                                    <h3 class="text-sm font-bold text-slate-800">Mulai Catat Pengeluaran</h3>
+                                    <p class="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                                        Tambahkan pengeluaran pertama Anda untuk mulai melacak biaya perjalanan bersama teman-teman.
+                                    </p>
+                                </div>
+                                
+                                @if (isCreator)
+                                {
+                                    <button @onclick="OpenAddExpenseModal" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/10 flex items-center gap-1.5 active:scale-95 transition-all">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        <span>Tambah Pengeluaran Baru</span>
+                                    </button>
+                                }
+
+                                <div class="w-full pt-4 border-t border-slate-100 flex flex-col items-center">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-3">PILIH KATEGORI CEPAT</span>
+                                    <div class="flex items-center gap-6 justify-center">
+                                        <button @onclick='() => OpenAddExpenseWithCategory("Food")' class="flex flex-col items-center gap-1 group">
+                                            <div class="w-10 h-10 rounded-full border border-slate-200 bg-white group-hover:border-blue-500 group-hover:bg-blue-50/20 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-all">
+                                                🍴
+                                            </div>
+                                            <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Food</span>
+                                        </button>
+                                        <button @onclick='() => OpenAddExpenseWithCategory("Travel")' class="flex flex-col items-center gap-1 group">
+                                            <div class="w-10 h-10 rounded-full border border-slate-200 bg-white group-hover:border-blue-500 group-hover:bg-blue-50/20 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-all">
+                                                🚗
+                                            </div>
+                                            <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Trans</span>
+                                        </button>
+                                        <button @onclick='() => OpenAddExpenseWithCategory("Lodging")' class="flex flex-col items-center gap-1 group">
+                                            <div class="w-10 h-10 rounded-full border border-slate-200 bg-white group-hover:border-blue-500 group-hover:bg-blue-50/20 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-all">
+                                                🏨
+                                            </div>
+                                            <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Stay</span>
+                                        </button>
+                                        <button @onclick='() => OpenAddExpenseWithCategory("Other")' class="flex flex-col items-center gap-1 group">
+                                            <div class="w-10 h-10 rounded-full border border-slate-200 bg-white group-hover:border-blue-500 group-hover:bg-blue-50/20 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-all">
+                                                •••
+                                            </div>
+                                            <span class="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Lainnya</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- List of items -->
+                            <div class="space-y-3">
+                                @foreach (var item in GetFilteredItems())
+                                {
+                                    var isExpanded = expandedItems.GetValueOrDefault(item.Id);
+                                    var payerName = bill.Participants.FirstOrDefault(p => p.Id == item.FrontedByParticipantId)?.Name ?? "Kas Bersama";
+                                    var assigneesCount = item.Assignees.Count;
+
+                                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm transition-all duration-200 overflow-hidden hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5">
+                                        <div class="p-4 flex items-center justify-between cursor-pointer select-none" @onclick="() => ToggleItemExpand(item.Id)">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg border border-blue-100">
+                                                    @GetCategoryIcon(item.Category)
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-xs font-bold text-slate-800 leading-none">@item.Name</h3>
+                                                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">
+                                                        Dibayar oleh <span class="text-blue-600">@payerName</span> • @assigneesCount Orang
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-right">
+                                                    <span class="text-xs font-black text-slate-800 font-mono">Rp @item.Price.ToString("N0")</span>
+                                                    <span class="block text-[8px] font-extrabold uppercase text-emerald-600 tracking-wider mt-0.5">Split Rata</span>
+                                                </div>
+                                                <svg class="w-4 h-4 text-slate-400 transition-transform duration-300 @(isExpanded ? "rotate-180" : "")" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        @if (isExpanded)
+                                        {
+                                            <div class="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3 text-[10px]">
+                                                <div class="flex items-center justify-between text-slate-400 font-bold tracking-wide uppercase">
+                                                    <span>Tanggal: @item.Date.ToString("dd MMM yyyy")</span>
+                                                    <span>Kategori: @item.Category</span>
+                                                </div>
+
+                                                @if (!string.IsNullOrWhiteSpace(item.Notes))
+                                                {
+                                                    <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-slate-600 italic">
+                                                        Catatan: @item.Notes
+                                                    </div>
+                                                }
+
+                                                <div class="space-y-2">
+                                                    <span class="font-extrabold text-slate-500 uppercase tracking-wider block mb-1">Rincian Pembagian:</span>
+                                                    @foreach (var assign in item.Assignees)
+                                                    {
+                                                        var name = assign.Participant?.Name ?? "Anggota";
+                                                        var individualShare = CalculateIndividualShareAmount(item, assign);
+                                                        <div class="flex items-center justify-between bg-white border border-slate-100 p-2 rounded-xl">
+                                                            <div class="flex items-center gap-2">
+                                                                <div class="w-5 h-5 rounded-full bg-slate-100 text-[8px] font-bold flex items-center justify-center">
+                                                                    @name.Substring(0,1).ToUpper()
+                                                                </div>
+                                                                <span class="font-semibold text-slate-600">@name</span>
+                                                            </div>
+                                                            <span class="font-mono font-bold text-slate-700">Rp @individualShare.ToString("N0")</span>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                @if (isCreator)
+                                                {
+                                                    <div class="flex justify-end pt-2">
+                                                        <button @onclick="() => RemoveItem(item.Id)" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-rose-100 text-rose-500 hover:bg-rose-50 hover:text-rose-600 transition-colors font-bold">
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                            </svg>
+                                                            <span>Hapus</span>
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Add More Expense Button -->
+                            @if (isCreator)
+                            {
+                                <button @onclick="OpenAddExpenseModal" class="w-full py-3 border-2 border-dashed border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 group">
+                                    <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    <span>Tambah Pengeluaran Lagi</span>
+                                </button>
+                            }
+                        }
+                    }
+                    else if (activeTab == "Summary")
+                    {
+                        <!-- RINGKASAN TAB -->
+                        <div class="space-y-4">
+                            <!-- Total Overview Cards -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50 rounded-xl p-4">
+                                    <span class="text-[9px] font-bold text-blue-400 uppercase tracking-wider block">Total Pengeluaran</span>
+                                    <span class="text-lg font-black text-blue-900 font-mono block mt-1">Rp @settlement.GrandTotal.ToString("N0")</span>
+                                </div>
+                                <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 rounded-xl p-4">
+                                    <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">Total Dibayar</span>
+                                    <span class="text-lg font-black text-emerald-900 font-mono block mt-1">Rp @settlement.TotalPaidToCashier.ToString("N0")</span>
+                                </div>
+                            </div>
+
+                            <!-- Pengumpul Dana (Collector) Selector -->
+                            <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 rounded-xl p-4 space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-amber-900">Pengumpul Dana</h4>
+                                        <p class="text-[9px] text-amber-600/80">Orang yang mengumpulkan semua pembayaran sebelum didistribusikan</p>
+                                    </div>
+                                </div>
+
+                                @if (isCreator)
+                                {
+                                    <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                                        <select @onchange="SetCollector" class="w-full sm:flex-1 px-3 py-2 rounded-xl border border-amber-200 bg-white text-slate-800 text-xs font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 transition-all">
+                                            <option value="0">-- Pilih Pengumpul Dana --</option>
+                                            @foreach (var p in bill!.Participants.Where(pt => !pt.IsDeleted))
+                                            {
+                                                var isSelected = bill.CollectorParticipantId == p.Id;
+                                                <option value="@p.Id" selected="@isSelected">@p.Name</option>
+                                            }
+                                        </select>
+                                        @if (bill.CollectorParticipantId.HasValue)
+                                        {
+                                            var collectorName = bill.Participants.FirstOrDefault(p => p.Id == bill.CollectorParticipantId)?.Name ?? "";
+                                            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 rounded-full">
+                                                <div class="w-5 h-5 rounded-full bg-gradient-to-tr @GetAvatarGradient(collectorName) text-white text-[8px] font-bold flex items-center justify-center">
+                                                    @collectorName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <span class="text-[10px] font-bold text-amber-800">@collectorName</span>
+                                                <button @onclick="ClearCollector" class="ml-1 text-amber-500 hover:text-amber-700 transition-colors" title="Hapus">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    @if (bill.CollectorParticipantId.HasValue)
+                                    {
+                                        var collectorName = bill.Participants.FirstOrDefault(p => p.Id == bill.CollectorParticipantId)?.Name ?? "";
+                                        <div class="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-amber-200">
+                                            <div class="w-6 h-6 rounded-full bg-gradient-to-tr @GetAvatarGradient(collectorName) text-white text-[9px] font-bold flex items-center justify-center">
+                                                @collectorName.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <span class="text-xs font-bold text-amber-800">@collectorName</span>
+                                            <span class="text-[9px] text-amber-500 ml-auto">Pengumpul Dana</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="px-3 py-2 bg-white rounded-xl border border-amber-200 text-center">
+                                            <span class="text-[10px] text-amber-500 font-semibold">Belum ada pengumpul dana yang ditunjuk</span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                            <!-- Per-Person Spending Breakdown -->
+                            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                <div class="px-4 py-3 border-b border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-700">Pengeluaran Per Anggota</h4>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    @foreach (var summary in settlement.ParticipantSummaries)
+                                    {
+                                        var totalSpent = bill!.Items.Where(i => !i.IsDeleted && i.FrontedByParticipantId == summary.ParticipantId).Sum(i => i.Price);
+                                        <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full bg-gradient-to-tr @GetAvatarGradient(summary.ParticipantName) text-white text-[10px] font-bold flex items-center justify-center">
+                                                    @summary.ParticipantName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <span class="text-xs font-bold text-slate-700 block">@summary.ParticipantName</span>
+                                                    <span class="text-[9px] text-slate-400">@bill!.Items.Count(i => !i.IsDeleted && i.FrontedByParticipantId == summary.ParticipantId) item</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-xs font-black text-slate-800 font-mono block">Rp @totalSpent.ToString("N0")</span>
+                                                <span class="text-[9px] text-slate-400">dikeluarkan</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Payment Distribution: Who owes whom -->
+                            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                <div class="px-4 py-3 border-b border-slate-100">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-700">Distribusi Pembayaran</h4>
+                                            <p class="text-[9px] text-slate-400 mt-0.5">
+                                                @if (bill!.CollectorParticipantId.HasValue)
+                                                {
+                                                    var cName = bill.Participants.FirstOrDefault(p => p.Id == bill.CollectorParticipantId)?.Name ?? "";
+                                                    <span>Alur melalui <span class="text-amber-600 font-bold">@cName</span> sebagai pengumpul</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Siapa perlu membayar kepada siapa</span>
+                                                }
+                                            </p>
+                                        </div>
+                                        @if (bill.CollectorParticipantId.HasValue)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full bg-amber-100 text-[8px] font-bold text-amber-700 uppercase">Via Pengumpul</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    @if (!settlement.TransferInstructions.Any())
+                                    {
+                                        <div class="px-4 py-8 text-center">
+                                            <span class="text-2xl block mb-2">✅</span>
+                                            <p class="text-xs font-bold text-slate-400">Semua sudah lunas</p>
+                                        </div>
+                                    }
+                                    else if (bill.CollectorParticipantId.HasValue)
+                                    {
+                                        var collectorId = bill.CollectorParticipantId.Value;
+                                        var payToCollector = settlement.TransferInstructions.Where(t => t.CreditorId == collectorId).ToList();
+                                        var collectorPays = settlement.TransferInstructions.Where(t => t.DebtorId == collectorId).ToList();
+
+                                        @if (payToCollector.Any())
+                                        {
+                                            <div class="px-4 py-2 bg-amber-50/50">
+                                                <span class="text-[9px] font-bold text-amber-600 uppercase tracking-wider">Bayar ke Pengumpul</span>
+                                            </div>
+                                            @foreach (var transfer in payToCollector)
+                                            {
+                                                <div class="px-4 py-3 flex items-center gap-3 hover:bg-amber-50/30 transition-colors">
+                                                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr @GetAvatarGradient(transfer.DebtorName) text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                                        @transfer.DebtorName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-1.5 text-[10px]">
+                                                            <span class="font-bold text-slate-700 truncate">@transfer.DebtorName</span>
+                                                            <svg class="w-3 h-3 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                            </svg>
+                                                            <span class="font-bold text-amber-700 truncate">@transfer.CreditorName</span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="text-xs font-black text-rose-600 font-mono flex-shrink-0">Rp @transfer.Amount.ToString("N0")</span>
+                                                </div>
+                                            }
+                                        }
+
+                                        @if (collectorPays.Any())
+                                        {
+                                            <div class="px-4 py-2 bg-emerald-50/50">
+                                                <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Pengumpul Distribusi ke</span>
+                                            </div>
+                                            @foreach (var transfer in collectorPays)
+                                            {
+                                                <div class="px-4 py-3 flex items-center gap-3 hover:bg-emerald-50/30 transition-colors">
+                                                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr @GetAvatarGradient(transfer.DebtorName) text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                                        @transfer.DebtorName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="flex items-center gap-1.5 text-[10px]">
+                                                            <span class="font-bold text-amber-700 truncate">@transfer.DebtorName</span>
+                                                            <svg class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                            </svg>
+                                                            <span class="font-bold text-slate-700 truncate">@transfer.CreditorName</span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="text-xs font-black text-emerald-600 font-mono flex-shrink-0">Rp @transfer.Amount.ToString("N0")</span>
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <!-- Normal peer-to-peer flow -->
+                                        @foreach (var transfer in settlement.TransferInstructions)
+                                        {
+                                            <div class="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/50 transition-colors">
+                                                <div class="w-8 h-8 rounded-full bg-gradient-to-tr @GetAvatarGradient(transfer.DebtorName) text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                                                    @transfer.DebtorName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-1.5 text-[10px]">
+                                                        <span class="font-bold text-slate-700 truncate">@transfer.DebtorName</span>
+                                                        <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                        </svg>
+                                                        <span class="font-bold text-slate-700 truncate">@transfer.CreditorName</span>
+                                                    </div>
+                                                </div>
+                                                <span class="text-xs font-black text-rose-600 font-mono flex-shrink-0">Rp @transfer.Amount.ToString("N0")</span>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Individual Balance Summary -->
+                            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                <div class="px-4 py-3 border-b border-slate-100">
+                                    <h4 class="text-xs font-bold text-slate-700">Saldo Per Anggota</h4>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    @foreach (var summary in settlement.ParticipantSummaries)
+                                    {
+                                        var isReceives = summary.Balance > 0.5m;
+                                        var isOwes = summary.Balance < -0.5m;
+                                        <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full bg-gradient-to-tr @GetAvatarGradient(summary.ParticipantName) text-white text-[10px] font-bold flex items-center justify-center">
+                                                    @summary.ParticipantName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <span class="text-xs font-bold text-slate-700 block">@summary.ParticipantName</span>
+                                                    <span class="text-[9px] text-slate-400">Beban: Rp @summary.TotalOwed.ToString("N0")</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                @if (isReceives)
+                                                {
+                                                    <span class="text-xs font-black text-emerald-600 font-mono block">+Rp @summary.Balance.ToString("N0")</span>
+                                                    <span class="text-[9px] text-emerald-500 font-bold">Menerima</span>
+                                                }
+                                                else if (isOwes)
+                                                {
+                                                    <span class="text-xs font-black text-rose-600 font-mono block">-Rp @Math.Abs(summary.Balance).ToString("N0")</span>
+                                                    <span class="text-[9px] text-rose-500 font-bold">Berhutang</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-xs font-black text-slate-400 font-mono block">Rp 0</span>
+                                                    <span class="text-[9px] text-slate-400 font-bold">Lunas</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (activeTab == "Members")
+                    {
+                        <div class="space-y-3">
+                            @if (!GetFilteredSummaries().Any())
+                            {
+                                <div class="text-center py-12 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                                    <span class="text-3xl block mb-2 opacity-60">👥</span>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Anggota Tidak Ditemukan</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var summary in GetFilteredSummaries())
+                                {
+                                    var isReceives = summary.Balance > 0.5m;
+                                    var isOwes = summary.Balance < -0.5m;
+
+                                    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-200">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr @GetAvatarGradient(summary.ParticipantName) text-white font-extrabold text-sm flex items-center justify-center">
+                                                    @summary.ParticipantName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-xs font-bold text-slate-800">@summary.ParticipantName</h3>
+                                                    <p class="text-[9px] text-slate-400 font-semibold mt-0.5">@summary.ParticipantName.ToLower().Replace(" ", ".")@("@splitbill.com")</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                @if (isReceives)
+                                                {
+                                                    <span class="inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded bg-emerald-50 text-emerald-600">
+                                                        ↓ Menerima
+                                                    </span>
+                                                }
+                                                else if (isOwes)
+                                                {
+                                                    <span class="inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded bg-rose-50 text-rose-600">
+                                                        ↑ Berhutang
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="inline-block px-2 py-0.5 text-[8px] font-black uppercase rounded bg-slate-100 text-slate-500">
+                                                        ✓ Lunas
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <hr class="border-slate-100" />
+
+                                        <div class="grid grid-cols-2 gap-4 text-[10px] font-semibold text-slate-400">
+                                            <div>
+                                                <span>Total Dibayar</span>
+                                                <span class="block text-xs font-bold text-slate-700 font-mono mt-0.5">Rp @summary.TotalPaid.ToString("N0")</span>
+                                            </div>
+                                            <div>
+                                                <span>Beban Porsi</span>
+                                                <span class="block text-xs font-bold text-slate-700 font-mono mt-0.5">Rp @summary.TotalOwed.ToString("N0")</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="rounded-xl p-3 flex items-center justify-between text-[11px] @(isReceives ? "bg-emerald-50 text-emerald-700" : isOwes ? "bg-rose-50 text-rose-700" : "bg-slate-50 text-slate-500")">
+                                            <span class="font-extrabold uppercase text-[9px] tracking-wide">Saldo Bersih</span>
+                                            <span class="font-mono font-bold">
+                                                @(isReceives ? "+" : "")Rp @summary.Balance.ToString("N0")
+                                            </span>
+                                        </div>
+
+                                        @if (isCreator)
+                                        {
+                                            <button @onclick="() => RemoveParticipant(summary.ParticipantId)" class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 p-1 transition-colors" aria-label="Hapus Anggota">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                </svg>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <!-- Add More Member Button -->
+                        @if (isCreator)
+                        {
+                            <button @onclick="OpenAddMemberModal" class="w-full py-3 border-2 border-dashed border-slate-200 hover:border-blue-400 text-slate-400 hover:text-blue-600 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 group">
+                                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                <span>Tambah Anggota Lagi</span>
+                            </button>
+                        }
+                    }
+
+                </div>
+            </div>
+
+            <!-- Right Side: Sidebar Cards (1/3 width) -->
+            <div class="space-y-6">
+                
+                <!-- 1. TRIP SUMMARY CARD -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span class="text-xs font-bold text-slate-800">Trip Summary</span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 11.517.517l-.02.041a.75.75 0 11-.537-.537zM12 18.75a6.75 6.75 0 100-13.5 6.75 6.75 0 000 13.5z" />
+                        </svg>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs font-semibold">
+                        @{
+                            var duration = bill.EndDate.HasValue && bill.StartDate.HasValue ? (bill.EndDate.Value - bill.StartDate.Value).Days + 1 : 8;
+                            var totalExpenses = bill.Items.Count(i => !i.IsDeleted);
+                        }
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Durasi</span>
+                            <span class="text-slate-800 font-bold">@duration Hari</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Total Anggota</span>
+                            <span class="text-slate-800 font-bold">@(bill.Participants.Count(p => !p.IsDeleted)) Orang</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Total Transaksi</span>
+                            <span class="text-slate-800 font-bold">@totalExpenses Transaksi</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Mata Uang</span>
+                            <span class="text-slate-800 font-bold">IDR (Rp)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. AKTIVITAS TERBARU CARD -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <span class="text-xs font-bold text-slate-800 block border-b border-slate-100 pb-2">Aktivitas Terbaru</span>
+
+                    <div class="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                        @foreach (var log in GetRecentActivities())
+                        {
+                            <div class="flex gap-2.5 items-start text-[11px] font-semibold animate-fade-in">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 @log.color">
+                                    @log.icon
+                                </div>
+                                <div class="space-y-0.5">
+                                    <p class="text-slate-700 leading-tight">@log.text</p>
+                                    <span class="text-[9px] text-slate-400 block font-normal">@log.time</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button @onclick='() => activeTab = "Expenses"' class="w-full text-center text-blue-600 hover:text-blue-800 text-[10px] font-bold block pt-1 hover:underline">
+                        Lihat Semua Aktivitas
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-white border-t border-gray-200 mt-24">
+        <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <span class="font-semibold">SplitFlow © @DateTime.Now.Year SplitFlow Inc. All rights reserved.</span>
+            <div class="flex items-center gap-6 font-medium">
+                <span class="hover:text-slate-600 cursor-pointer transition-colors">Privacy Policy</span>
+                <span class="hover:text-slate-600 cursor-pointer transition-colors">Terms of Service</span>
+                <span class="hover:text-slate-600 cursor-pointer transition-colors">Contact</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- A. MODAL: ADD EXPENSE -->
+    @if (showAddExpenseModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4 max-h-[90%] overflow-y-auto flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h3 class="text-base font-bold text-slate-800">Catat Pengeluaran Baru</h3>
+                        <button @onclick="CloseAddExpenseModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+                    </div>
+
+                    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100 mt-4 flex items-center gap-3">
+                        <span class="text-2xl font-black text-blue-600">Rp</span>
+                        <input type="text" value="@expenseAmountString" oninput="formatCurrencyOnInput(this)" @onchange="OnExpenseAmountChanged" class="w-full bg-transparent border-none focus:outline-none text-2xl font-black text-blue-950 font-mono" placeholder="0" />
+                    </div>
+
+                    <div class="space-y-3 mt-4">
+                        <input @bind="expenseName" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-850 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 text-xs font-semibold transition-all" placeholder="Nama pengeluaran (contoh: Makan Siang)" />
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Kategori</label>
+                                <select @bind="expenseCategory" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
+                                    <option value="Food">Makanan</option>
+                                    <option value="Lodging">Penginapan</option>
+                                    <option value="Travel">Transportasi</option>
+                                    <option value="Shopping">Belanja</option>
+                                    <option value="Other">Lainnya</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Tanggal</label>
+                                <input type="date" @bind="expenseDate" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Dibayar Oleh</label>
+                            <div class="flex gap-2 overflow-x-auto pb-2 select-none">
+                                @foreach (var p in bill.Participants.Where(pt => !pt.IsDeleted))
+                                {
+                                    var isSelected = expensePaidById == p.Id;
+                                    <div @onclick="() => expensePaidById = p.Id" class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full border cursor-pointer transition-all text-[10px] font-bold @(isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-slate-350")">
+                                        <div class="w-4 h-4 rounded-full bg-gradient-to-tr @GetAvatarGradient(p.Name) text-white flex items-center justify-center text-[7px] font-black">
+                                            @p.Name.Substring(0, 1).ToUpper()
+                                        </div>
+                                        <span>@p.Name</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/30 space-y-3">
+                            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <span>Tanggung Jawab Anggota</span>
+                                <button @onclick="ToggleSelectAllParticipants" class="text-blue-600 hover:text-blue-800">Pilih Semua</button>
+                            </div>
+
+                            <div class="max-h-[140px] overflow-y-auto space-y-2 pr-1">
+                                @foreach (var p in bill.Participants.Where(pt => !pt.IsDeleted))
+                                {
+                                    var isChecked = expenseParticipantIds.Contains(p.Id);
+                                    <div class="flex items-center justify-between bg-white border border-slate-100 p-2.5 rounded-xl cursor-pointer hover:border-blue-200 transition-colors select-none" @onclick="() => ToggleExpenseParticipant(p.Id)">
+                                        <div class="flex items-center gap-2">
+                                            <input type="checkbox" checked="@isChecked" class="w-3.5 h-3.5 text-blue-600 border-slate-200 rounded focus:ring-blue-500/10 pointer-events-none" />
+                                            <div class="w-4.5 h-4.5 rounded-full bg-gradient-to-tr @GetAvatarGradient(p.Name) text-white text-[8px] font-bold flex items-center justify-center">
+                                                @p.Name.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <span class="text-xs font-semibold text-slate-700">@p.Name</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <hr class="border-slate-100" />
+
+                            <div class="flex bg-slate-100 p-0.5 rounded-xl text-[10px] font-bold">
+                                <button @onclick='() => expenseSplitMode = "Equal"' class="flex-1 py-1.5 rounded-lg transition-colors @(expenseSplitMode == "Equal" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")">
+                                    Bagi Rata
+                                </button>
+                                <button @onclick='() => expenseSplitMode = "Manual"' class="flex-1 py-1.5 rounded-lg transition-colors @(expenseSplitMode == "Manual" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")">
+                                    Manual
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-between text-[11px] font-bold text-slate-600">
+                                <span>@(expenseSplitMode == "Manual" ? "Total Porsi" : "Porsi Per Orang")</span>
+                                <span class="text-xs font-black @(sharesBalanceStatus == "ok" ? "text-emerald-600" : "text-rose-600") font-mono">
+                                    Rp @calculatedPersonPays.ToString("N0")
+                                </span>
+                            </div>
+
+                            <!-- Balance Warning -->
+                            @if (sharesBalanceStatus == "under")
+                            {
+                                <div class="bg-rose-50 border border-rose-200 rounded-xl p-2.5 flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                    </svg>
+                                    <div>
+                                        <span class="text-[10px] font-bold text-rose-700 block">Porsi belum sesuai total</span>
+                                        <span class="text-[9px] text-rose-500">Kekurangan Rp @sharesDifference.ToString("N0") dari Rp @ParseDecimal(expenseAmountString).ToString("N0")</span>
+                                    </div>
+                                </div>
+                            }
+                            else if (sharesBalanceStatus == "over")
+                            {
+                                <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                    </svg>
+                                    <div>
+                                        <span class="text-[10px] font-bold text-amber-700 block">Porsi melebihi total</span>
+                                        <span class="text-[9px] text-amber-500">Kelebihan Rp @sharesDifference.ToString("N0") dari Rp @ParseDecimal(expenseAmountString).ToString("N0")</span>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (expenseSplitMode == "Manual")
+                            {
+                                <div class="space-y-2 pt-2 border-t border-slate-100">
+                                    @foreach (var pId in expenseParticipantIds)
+                                    {
+                                        var p = bill.Participants.FirstOrDefault(pt => pt.Id == pId);
+                                        if (p != null)
+                                        {
+                                            var nominalStr = GetManualNominalString(pId);
+                                            <div class="flex items-center justify-between text-xs gap-3">
+                                                <span class="font-semibold text-slate-600">@p.Name</span>
+                                                <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1">
+                                                    <span class="text-[10px] text-slate-400">Rp</span>
+                                                    <input type="text" value="@nominalStr" oninput="formatCurrencyOnInput(this)" @onchange="(e) => OnManualNominalChanged(pId, e.Value)" class="w-20 font-mono text-slate-700 focus:outline-none text-right font-bold" />
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <textarea @bind="expenseNotes" rows="2" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 text-xs resize-none transition-all" placeholder="Catatan tambahan (opsional)"></textarea>
+                    </div>
+                </div>
+
+                <button @onclick="SaveExpense" class="w-full mt-4 py-3.5 @(sharesBalanceStatus == "ok" ? "bg-blue-600 hover:bg-blue-700" : "bg-slate-300 cursor-not-allowed") text-white font-extrabold rounded-xl text-xs tracking-wider transition-all duration-200 transform @(sharesBalanceStatus == "ok" ? "active:scale-95" : "") flex items-center justify-center gap-1.5 shadow-sm" disabled="@(sharesBalanceStatus != "ok")">
+                    @if (sharesBalanceStatus != "ok")
+                    {
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                        </svg>
+                        <span>Perbaiki Porsi Terlebih Dahulu</span>
+                    }
+                    else
+                    {
+                        <span>Simpan Pengeluaran</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- B. MODAL: ADD MEMBER -->
+    @if (showAddMemberModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Tambah Anggota</h3>
+                    <button @onclick="CloseAddMemberModal" class="text-slate-400 hover:text-slate-700">✕</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</label>
+                        <input @bind="newMemberName" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 text-xs font-semibold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 transition-all" placeholder="Contoh: David Chen" />
+                    </div>
+                </div>
+
+                <button @onclick="SaveMember" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-xs tracking-wider transition-all transform active:scale-95 shadow-sm">
+                    Simpan Anggota
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- C. MODAL: EDIT GROUP INFO -->
+    @if (showEditGroupModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Edit Detail Grup</h3>
+                    <button @onclick="CloseEditGroupModal" class="text-slate-400 hover:text-slate-700">✕</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Nama Acara</label>
+                        <input @bind="editEventName" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Deskripsi</label>
+                        <textarea @bind="editDescription" rows="2" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none transition-all"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Mulai</label>
+                            <input type="date" @bind="editStartDate" class="w-full px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Selesai</label>
+                            <input type="date" @bind="editEndDate" class="w-full px-2 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all" />
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Status</label>
+                        <select @bind="editStatus" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
+                            <option value="ONGOING">ONGOING</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="ARCHIVED">ARCHIVED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button @onclick="SaveGroupDetails" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-xs tracking-wider transition-all transform active:scale-95 shadow-sm">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- D. MODAL: ADD PAYMENT (SETTLE UP) -->
+    @if (showAddPaymentModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Catat Pembayaran</h3>
+                    <button @onclick="CloseAddPaymentModal" class="text-slate-400 hover:text-slate-700">✕</button>
+                </div>
+
+                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 flex items-center gap-3">
+                    <span class="text-2xl font-black text-emerald-600">Rp</span>
+                    <input type="text" @bind="paymentAmountString" oninput="formatCurrencyOnInput(this)" class="w-full bg-transparent border-none focus:outline-none text-2xl font-black text-emerald-950 font-mono" placeholder="0" />
+                </div>
+
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider">Anggota yang membayar ke kasir</label>
+                        <select @bind="paymentParticipantId" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all">
+                            @foreach (var p in bill.Participants.Where(pt => !pt.IsDeleted))
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <button @onclick="SavePayment" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs tracking-wider transition-all transform active:scale-95 shadow-sm">
+                    Simpan Pembayaran
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Script for input formatting -->
+    <script>
+        function formatCurrencyOnInput(el) {
+            let val = el.value.replace(/\D/g, '');
+            el.value = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
+        }
+    </script>
+
+    <style>
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @@keyframes fade-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
+}
+
+@code {
+    [Parameter]
+    public string Uuid { get; set; } = string.Empty;
+
+    private Bill? bill;
+    private SettlementResult settlement = new();
+    private bool loading = true;
+    private bool isCreator = false;
+    private bool copied = false;
+
+    // Tabs
+    private string activeTab = "Expenses"; // Expenses, Members, Summary, Settlements
+    private string selectedCategoryFilter = "All";
+    private string searchQuery = "";
+
+    // Modals
+    private bool showAddExpenseModal = false;
+    private bool showAddMemberModal = false;
+    private bool showEditGroupModal = false;
+    private bool showAddPaymentModal = false;
+
+    // Form fields - Add Expense
+    private string expenseAmountString = "";
+    private string expenseName = "";
+    private string expenseCategory = "Food";
+    private DateTime expenseDate = DateTime.Today;
+    private int expensePaidById = 0;
+    private HashSet<int> expenseParticipantIds = new();
+    private string expenseSplitMode = "Equal"; // Equal, Manual
+    private Dictionary<int, decimal> manualNominalAmounts = new();
+    private string expenseNotes = "";
+
+    // Form fields - Add Member
+    private string newMemberName = "";
+
+    // Form fields - Edit Group Info
+    private string editEventName = "";
+    private string editDescription = "";
+    private DateTime? editStartDate;
+    private DateTime? editEndDate;
+    private string editStatus = "ONGOING";
+
+    // Form fields - Add Payment
+    private int paymentParticipantId = 0;
+    private string paymentAmountString = "";
+
+    private Dictionary<int, bool> expandedItems = new();
+
+    private void ToggleItemExpand(int itemId)
+    {
+        expandedItems[itemId] = !expandedItems.GetValueOrDefault(itemId);
+    }
+
+    private decimal ParseDecimal(string? formattedStr)
+    {
+        if (string.IsNullOrWhiteSpace(formattedStr)) return 0;
+        string clean = new string(formattedStr.Where(char.IsDigit).ToArray());
+        decimal.TryParse(clean, out decimal result);
+        return result;
+    }
+
+    private List<Item> GetFilteredItems()
+    {
+        if (bill == null) return new List<Item>();
+        var filtered = bill.Items.Where(i => !i.IsDeleted);
+        if (selectedCategoryFilter != "All")
+        {
+            filtered = filtered.Where(i => i.Category.Equals(selectedCategoryFilter, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filtered = filtered.Where(i => i.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+        return filtered.OrderByDescending(i => i.Id).ToList();
+    }
+
+    private List<ParticipantSummary> GetFilteredSummaries()
+    {
+        return settlement.ParticipantSummaries
+            .Where(s => string.IsNullOrWhiteSpace(searchQuery) || 
+                        s.ParticipantName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private List<Payer> GetFilteredPayers()
+    {
+        if (bill == null) return new List<Payer>();
+        var filtered = bill.Payers.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filtered = filtered.Where(p => p.Participant.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase));
+        }
+        return filtered.ToList();
+    }
+
+    private List<(string text, string time, string icon, string color)> GetRecentActivities()
+    {
+        var logs = new List<(string text, string time, string icon, string color)>();
+        if (bill == null) return logs;
+        
+        logs.Add(("Grup perjalanan dibuat", "Mulai", "📂", "bg-slate-100 text-slate-600"));
+
+        foreach (var p in bill.Participants.Where(pt => !pt.IsDeleted).Take(3))
+        {
+            logs.Insert(0, ($"{p.Name} baru saja bergabung", "Baru", "👥", "bg-blue-50 text-blue-600"));
+        }
+        
+        foreach (var item in bill.Items.Where(it => !it.IsDeleted).Take(3))
+        {
+            var pName = bill.Participants.FirstOrDefault(p => p.Id == item.FrontedByParticipantId)?.Name ?? "Anggota";
+            logs.Insert(0, ($"{pName} menambahkan pengeluaran {item.Name}", "Baru", "💵", "bg-emerald-50 text-emerald-600"));
+        }
+        
+        return logs.Take(4).ToList();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                if (bill != null)
+                {
+                    var savedToken = await JS.InvokeAsync<string>("localStorage.getItem", $"bill_creator_token_{Uuid}");
+                    isCreator = !string.IsNullOrEmpty(savedToken) && savedToken == bill.CreatorToken;
+                    StateHasChanged();
+                }
+            }
+            catch
+            {
+                // Fallback
+            }
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        loading = true;
+
+        bill = await Db.Bills
+            .Include(b => b.Participants)
+            .Include(b => b.Payers)
+                .ThenInclude(p => p.Participant)
+            .Include(b => b.Items)
+                .ThenInclude(i => i.Assignees)
+            .FirstOrDefaultAsync(b => b.Uuid == Uuid);
+
+        if (bill != null)
+        {
+            settlement = Settlement.CalculateSettlement(bill);
+            
+            // Auto initialize forms if not dirty
+            if (expensePaidById == 0 && bill.Participants.Any(p => !p.IsDeleted))
+            {
+                var firstParticipant = bill.Participants.FirstOrDefault(p => !p.IsDeleted);
+                if (firstParticipant != null)
+                {
+                    expensePaidById = firstParticipant.Id;
+                }
+            }
+        }
+
+        loading = false;
+    }
+
+    // Modal Add Expense triggers
+    private void OpenAddExpenseModal()
+    {
+        expenseName = "";
+        expenseAmountString = "";
+        expenseCategory = "Food";
+        expenseDate = DateTime.Today;
+        expenseParticipantIds.Clear();
+        manualNominalAmounts.Clear();
+        expenseNotes = "";
+
+        if (bill != null)
+        {
+            foreach (var p in bill.Participants.Where(pt => !pt.IsDeleted))
+            {
+                expenseParticipantIds.Add(p.Id);
+            }
+            var firstP = bill.Participants.FirstOrDefault(pt => !pt.IsDeleted);
+            if (firstP != null)
+            {
+                expensePaidById = firstP.Id;
+            }
+        }
+
+        showAddExpenseModal = true;
+    }
+
+    private void OpenAddExpenseWithCategory(string category)
+    {
+        OpenAddExpenseModal();
+        expenseCategory = category;
+    }
+
+    private void CloseAddExpenseModal() => showAddExpenseModal = false;
+
+    private void OnExpenseAmountChanged(ChangeEventArgs e)
+    {
+        expenseAmountString = e.Value?.ToString() ?? "";
+        RecalculateManualDefaults();
+    }
+
+    private void RecalculateManualDefaults()
+    {
+        if (expenseSplitMode == "Manual" && expenseParticipantIds.Any())
+        {
+            decimal amt = ParseDecimal(expenseAmountString);
+            if (amt <= 0) return;
+
+            // Calculate how much is already assigned
+            decimal alreadyAssigned = 0m;
+            int unassignedCount = 0;
+
+            foreach (var pId in expenseParticipantIds)
+            {
+                if (manualNominalAmounts.TryGetValue(pId, out var val) && val > 0)
+                {
+                    alreadyAssigned += val;
+                }
+                else
+                {
+                    unassignedCount++;
+                }
+            }
+
+            // Distribute remaining amount evenly among unassigned participants
+            decimal remaining = Math.Max(0, amt - alreadyAssigned);
+            decimal avg = unassignedCount > 0 ? Math.Round(remaining / unassignedCount, 0) : 0m;
+
+            foreach (var pId in expenseParticipantIds)
+            {
+                if (!manualNominalAmounts.ContainsKey(pId) || manualNominalAmounts[pId] == 0)
+                {
+                    manualNominalAmounts[pId] = avg;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns "ok" if shares match total, "under" if shares < total, "over" if shares > total
+    /// </summary>
+    private string sharesBalanceStatus
+    {
+        get
+        {
+            if (!showAddExpenseModal) return "ok";
+            decimal total = ParseDecimal(expenseAmountString);
+            if (total <= 0) return "ok"; // No amount entered yet
+
+            decimal sharesSum;
+            if (expenseSplitMode == "Equal")
+            {
+                int pCount = expenseParticipantIds.Count;
+                if (pCount == 0) return "ok";
+                decimal perPerson = Math.Round(total / pCount, 0);
+                sharesSum = perPerson * pCount;
+            }
+            else
+            {
+                sharesSum = manualNominalAmounts.Values.Sum();
+            }
+
+            decimal diff = total - sharesSum;
+            if (Math.Abs(diff) <= 1m) return "ok"; // Allow 1 rupiah rounding tolerance
+            return diff > 0 ? "under" : "over";
+        }
+    }
+
+    private decimal sharesDifference
+    {
+        get
+        {
+            decimal total = ParseDecimal(expenseAmountString);
+            decimal sharesSum;
+            if (expenseSplitMode == "Equal")
+            {
+                int pCount = expenseParticipantIds.Count;
+                if (pCount == 0) return 0m;
+                decimal perPerson = Math.Round(total / pCount, 0);
+                sharesSum = perPerson * pCount;
+            }
+            else
+            {
+                sharesSum = manualNominalAmounts.Values.Sum();
+            }
+            return Math.Abs(total - sharesSum);
+        }
+    }
+
+    private decimal calculatedPersonPays
+    {
+        get
+        {
+            decimal amount = ParseDecimal(expenseAmountString);
+            if (expenseSplitMode == "Equal")
+            {
+                int pCount = expenseParticipantIds.Count;
+                return pCount > 0 ? Math.Round(amount / pCount, 0) : 0m;
+            }
+            else
+            {
+                return manualNominalAmounts.Values.Sum();
+            }
+        }
+    }
+
+    private void ToggleExpenseParticipant(int id)
+    {
+        if (expenseParticipantIds.Contains(id))
+        {
+            expenseParticipantIds.Remove(id);
+            manualNominalAmounts.Remove(id);
+        }
+        else
+        {
+            expenseParticipantIds.Add(id);
+            RecalculateManualDefaults();
+        }
+    }
+
+    private void ToggleSelectAllParticipants()
+    {
+        if (bill == null) return;
+        var activePs = bill.Participants.Where(pt => !pt.IsDeleted).Select(pt => pt.Id).ToList();
+        
+        if (expenseParticipantIds.Count == activePs.Count)
+        {
+            expenseParticipantIds.Clear();
+            manualNominalAmounts.Clear();
+        }
+        else
+        {
+            foreach (var id in activePs)
+            {
+                expenseParticipantIds.Add(id);
+            }
+            RecalculateManualDefaults();
+        }
+    }
+
+    private string GetManualNominalString(int participantId)
+    {
+        if (manualNominalAmounts.TryGetValue(participantId, out var val) && val > 0)
+        {
+            return val.ToString("N0");
+        }
+        return "";
+    }
+
+    private void OnManualNominalChanged(int pId, object? val)
+    {
+        decimal parsedVal = ParseDecimal(val?.ToString());
+        manualNominalAmounts[pId] = parsedVal;
+    }
+
+    private async Task SaveExpense()
+    {
+        decimal amount = ParseDecimal(expenseAmountString);
+        if (string.IsNullOrWhiteSpace(expenseName) || amount <= 0 || bill == null) return;
+
+        // Validate shares balance before saving
+        if (sharesBalanceStatus != "ok") return;
+
+        var item = new Item
+        {
+            BillId = bill.Id,
+            Name = expenseName.Trim(),
+            Price = amount,
+            Category = expenseCategory,
+            Date = expenseDate,
+            FrontedByParticipantId = expensePaidById,
+            Notes = expenseNotes.Trim(),
+            TaxType = ChargeType.Percentage,
+            TaxValue = 0,
+            ServiceChargeType = ChargeType.Percentage,
+            ServiceChargeValue = 0
+        };
+
+        Db.Items.Add(item);
+        await Db.SaveChangesAsync(); // save item first to get its ID
+
+        // Add assignees
+        foreach (var pId in expenseParticipantIds)
+        {
+            var assignee = new ItemAssignee
+            {
+                ItemId = item.Id,
+                ParticipantId = pId,
+                InputType = expenseSplitMode == "Manual" ? AssigneeInputType.Nominal : AssigneeInputType.Ratio,
+                ShareRatio = 1.0m,
+                NominalAmount = expenseSplitMode == "Manual" ? manualNominalAmounts.GetValueOrDefault(pId) : 0m
+            };
+            Db.ItemAssignees.Add(assignee);
+        }
+
+        await Db.SaveChangesAsync();
+        showAddExpenseModal = false;
+        await RefreshData();
+    }
+
+    // Modal Add Member triggers
+    private void OpenAddMemberModal()
+    {
+        newMemberName = "";
+        showAddMemberModal = true;
+    }
+
+    private void CloseAddMemberModal() => showAddMemberModal = false;
+
+    private async Task SaveMember()
+    {
+        if (string.IsNullOrWhiteSpace(newMemberName) || bill == null) return;
+
+        var p = new Participant
+        {
+            BillId = bill.Id,
+            Name = newMemberName.Trim(),
+            Email = string.Empty,
+            AvatarUrl = ""
+        };
+
+        Db.Participants.Add(p);
+        await Db.SaveChangesAsync();
+        showAddMemberModal = false;
+        await RefreshData();
+    }
+
+    // Modal Edit Group triggers
+    private void OpenEditGroupModal()
+    {
+        if (bill == null || !isCreator) return;
+        editEventName = bill.EventName;
+        editDescription = bill.Description;
+        editStartDate = bill.StartDate;
+        editEndDate = bill.EndDate;
+        editStatus = bill.Status;
+        showEditGroupModal = true;
+    }
+
+    private void CloseEditGroupModal() => showEditGroupModal = false;
+
+    private async Task SaveGroupDetails()
+    {
+        if (string.IsNullOrWhiteSpace(editEventName) || bill == null) return;
+
+        bill.EventName = editEventName.Trim();
+        bill.Description = editDescription.Trim();
+        bill.StartDate = editStartDate;
+        bill.EndDate = editEndDate;
+        bill.Status = editStatus;
+
+        await Db.SaveChangesAsync();
+        showEditGroupModal = false;
+        await RefreshData();
+    }
+
+    // Modal Add Payment triggers
+    private void OpenAddPaymentModal()
+    {
+        paymentAmountString = "";
+        if (bill != null)
+        {
+            var firstP = bill.Participants.FirstOrDefault(pt => !pt.IsDeleted);
+            if (firstP != null)
+            {
+                paymentParticipantId = firstP.Id;
+            }
+        }
+        showAddPaymentModal = true;
+    }
+
+    private void CloseAddPaymentModal() => showAddPaymentModal = false;
+
+    private async Task SavePayment()
+    {
+        decimal amount = ParseDecimal(paymentAmountString);
+        if (amount <= 0 || bill == null || paymentParticipantId == 0) return;
+
+        var payer = new Payer
+        {
+            BillId = bill.Id,
+            ParticipantId = paymentParticipantId,
+            AmountPaid = amount
+        };
+
+        Db.Payers.Add(payer);
+        await Db.SaveChangesAsync();
+        showAddPaymentModal = false;
+        await RefreshData();
+    }
+
+    private async Task RemovePayment(int payerId)
+    {
+        if (bill == null || !isCreator) return;
+        var payer = await Db.Payers.FindAsync(payerId);
+        if (payer != null)
+        {
+            Db.Payers.Remove(payer);
+            await Db.SaveChangesAsync();
+            await RefreshData();
+        }
+    }
+
+    private async Task RemoveItem(int id)
+    {
+        if (bill == null || !isCreator) return;
+        var item = bill.Items.FirstOrDefault(i => i.Id == id);
+        if (item != null)
+        {
+            item.IsDeleted = true;
+            await Db.SaveChangesAsync();
+            await RefreshData();
+        }
+    }
+
+    private async Task RemoveParticipant(int id)
+    {
+        if (bill == null || !isCreator) return;
+        var pt = bill.Participants.FirstOrDefault(p => p.Id == id);
+        if (pt != null)
+        {
+            pt.IsDeleted = true;
+
+            var payers = bill.Payers.Where(py => py.ParticipantId == id);
+            Db.Payers.RemoveRange(payers);
+
+            var assignees = await Db.ItemAssignees.Where(a => a.ParticipantId == id).ToListAsync();
+            Db.ItemAssignees.RemoveRange(assignees);
+
+            await Db.SaveChangesAsync();
+            await RefreshData();
+        }
+    }
+
+    private async Task SetCollector(ChangeEventArgs e)
+    {
+        if (bill == null || !isCreator) return;
+        if (int.TryParse(e.Value?.ToString(), out int id) && id > 0)
+        {
+            bill.CollectorParticipantId = id;
+        }
+        else
+        {
+            bill.CollectorParticipantId = null;
+        }
+        await Db.SaveChangesAsync();
+        await RefreshData();
+    }
+
+    private async Task ClearCollector()
+    {
+        if (bill == null || !isCreator) return;
+        bill.CollectorParticipantId = null;
+        await Db.SaveChangesAsync();
+        await RefreshData();
+    }
+
+    private async Task CopyShareLink()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Navigation.Uri);
+            copied = true;
+            StateHasChanged();
+            await Task.Delay(2000);
+            copied = false;
+            StateHasChanged();
+        }
+        catch
+        {
+            // Fail
+        }
+    }
+
+    // UI Helpers
+    private string GetAvatarGradient(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "from-slate-400 to-slate-500";
+        int hash = name.GetHashCode();
+        string[] gradients = new[]
+        {
+            "from-blue-500 to-indigo-600",
+            "from-emerald-400 to-teal-500",
+            "from-amber-400 to-orange-500",
+            "from-rose-500 to-pink-600",
+            "from-fuchsia-500 to-purple-600",
+            "from-violet-500 to-indigo-600",
+            "from-sky-400 to-blue-500"
+        };
+        int index = Math.Abs(hash) % gradients.Length;
+        return gradients[index];
+    }
+
+    private string GetCategoryIcon(string category)
+    {
+        switch (category.ToLower())
+        {
+            case "food":
+                return "🍴";
+            case "lodging":
+                return "🏨";
+            case "travel":
+                return "🚗";
+            case "shopping":
+                return "🛒";
+            default:
+                return "💵";
+        }
+    }
+
+    private decimal CalculateIndividualShareAmount(Item item, ItemAssignee assign)
+    {
+        if (assign.InputType == AssigneeInputType.Nominal)
+        {
+            return assign.NominalAmount;
+        }
+        else
+        {
+            var ratioAssignees = item.Assignees.Where(a => a.InputType == AssigneeInputType.Ratio).ToList();
+            var totalRatio = ratioAssignees.Sum(a => a.ShareRatio);
+            
+            decimal nominalSum = item.Assignees.Where(a => a.InputType == AssigneeInputType.Nominal).Sum(a => a.NominalAmount);
+            decimal remaining = Math.Max(0, item.Price - nominalSum);
+
+            if (totalRatio > 0)
+            {
+                return Math.Round(remaining * (assign.ShareRatio / totalRatio), 0);
+            }
+            return 0m;
+        }
+    }
+}
